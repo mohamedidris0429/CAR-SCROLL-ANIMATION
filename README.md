@@ -5,6 +5,7 @@
 🌐 Live Demo
 
 "🚀 View Live Project" (https://car-scroll-animation-pi.vercel.app/)
+important ⚠️ rotate and scroll in mobile 
 
 ✨ Features
 
