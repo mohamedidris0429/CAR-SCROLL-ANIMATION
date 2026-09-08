@@ -1,0 +1,1626 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Ride Beyond — Motorcycle Experience</title>
+
+<style>
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
+
+    html {
+        background: #000;
+        scroll-behavior: auto;
+    }
+
+    body {
+        background: #000;
+        color: #fff;
+        font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display",
+                     "SF Pro Text", "Helvetica Neue", Arial, sans-serif;
+        overflow-x: hidden;
+    }
+
+    body.loading {
+        overflow: hidden;
+    }
+
+    /* =========================================================
+       LOADING SCREEN
+    ========================================================= */
+
+    #loader {
+        position: fixed;
+        inset: 0;
+        z-index: 9999;
+        background: #000;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-direction: column;
+        transition:
+            opacity 0.8s ease,
+            visibility 0.8s ease;
+    }
+
+    #loader.hidden {
+        opacity: 0;
+        visibility: hidden;
+        pointer-events: none;
+    }
+
+    .loader-content {
+        width: min(360px, 78vw);
+        text-align: center;
+    }
+
+    .loader-brand {
+        font-size: 10px;
+        letter-spacing: 0.35em;
+        text-transform: uppercase;
+        color: rgba(255,255,255,0.45);
+        margin-bottom: 22px;
+    }
+
+    .loader-title {
+        font-size: clamp(30px, 6vw, 52px);
+        font-weight: 600;
+        letter-spacing: -0.05em;
+        margin-bottom: 28px;
+    }
+
+    .progress-track {
+        width: 100%;
+        height: 2px;
+        background: rgba(255,255,255,0.12);
+        overflow: hidden;
+    }
+
+    .progress-bar {
+        width: 0%;
+        height: 100%;
+        background: #fff;
+        transition: width 0.2s ease;
+    }
+
+    .loader-status {
+        display: flex;
+        justify-content: space-between;
+        margin-top: 12px;
+        font-size: 9px;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+        color: rgba(255,255,255,0.42);
+    }
+
+    /* =========================================================
+       MAIN SCROLL EXPERIENCE
+    ========================================================= */
+
+    .experience {
+        position: relative;
+        height: 820vh;
+        background: #000;
+    }
+
+    .sticky-stage {
+        position: sticky;
+        top: 0;
+        width: 100%;
+        height: 100vh;
+        height: 100svh;
+        min-height: 500px;
+        overflow: hidden;
+        background: #000;
+    }
+
+    #bikeCanvas {
+        position: absolute;
+        inset: 0;
+        width: 100vw;
+        height: 100vh;
+        height: 100svh;
+        display: block;
+        object-fit: cover;
+        background: #000;
+    }
+
+    /*
+       Canvas itself does not have object-fit drawing behavior.
+       JS uses a cover calculation so the actual bitmap always
+       fills the viewport without letterboxing.
+    */
+
+    .cinematic-vignette {
+        position: absolute;
+        inset: 0;
+        z-index: 2;
+        pointer-events: none;
+        background:
+            radial-gradient(
+                ellipse at center,
+                transparent 35%,
+                rgba(0,0,0,0.18) 60%,
+                rgba(0,0,0,0.72) 100%
+            );
+    }
+
+    .top-gradient {
+        position: absolute;
+        inset: 0;
+        z-index: 2;
+        pointer-events: none;
+        background:
+            linear-gradient(
+                to bottom,
+                rgba(0,0,0,0.5),
+                transparent 24%,
+                transparent 72%,
+                rgba(0,0,0,0.65)
+            );
+    }
+
+    /* =========================================================
+       NAVIGATION
+    ========================================================= */
+
+    .nav {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        padding:
+            max(24px, env(safe-area-inset-top))
+            clamp(22px, 5vw, 72px)
+            0;
+        z-index: 10;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        pointer-events: none;
+    }
+
+    .logo {
+        font-size: 12px;
+        font-weight: 600;
+        letter-spacing: 0.25em;
+        text-transform: uppercase;
+        white-space: nowrap;
+    }
+
+    .nav-right {
+        display: flex;
+        align-items: center;
+        gap: 22px;
+        font-size: 9px;
+        letter-spacing: 0.2em;
+        color: rgba(255,255,255,0.55);
+        text-transform: uppercase;
+    }
+
+    .nav-line {
+        width: 45px;
+        height: 1px;
+        background: rgba(255,255,255,0.35);
+    }
+
+    /* =========================================================
+       HERO
+    ========================================================= */
+
+    .hero {
+        position: absolute;
+        inset: 0;
+        z-index: 5;
+        pointer-events: none;
+        display: flex;
+        align-items: center;
+        padding-left: clamp(25px, 8vw, 130px);
+        padding-right: 20px;
+        transition:
+            opacity 0.45s ease,
+            transform 0.45s ease;
+    }
+
+    .hero-content {
+        max-width: 850px;
+        transform: translateY(-3vh);
+    }
+
+    .eyebrow {
+        font-size: clamp(9px, 1vw, 12px);
+        letter-spacing: 0.42em;
+        text-transform: uppercase;
+        color: rgba(255,255,255,0.58);
+        margin-bottom: 24px;
+    }
+
+    .hero h1 {
+        font-size: clamp(64px, 13vw, 190px);
+        line-height: 0.82;
+        letter-spacing: -0.075em;
+        font-weight: 700;
+    }
+
+    .hero h1 span {
+        display: block;
+    }
+
+    .hero-subtitle {
+        margin-top: 30px;
+        max-width: 430px;
+        font-size: clamp(12px, 1.3vw, 17px);
+        line-height: 1.65;
+        color: rgba(255,255,255,0.62);
+        letter-spacing: -0.01em;
+    }
+
+    /* =========================================================
+       GLASS CARDS
+    ========================================================= */
+
+    .card-layer {
+        position: absolute;
+        inset: 0;
+        z-index: 7;
+        pointer-events: none;
+    }
+
+    .glass-card {
+        position: absolute;
+        width: min(410px, 82vw);
+        padding: 28px 30px 30px;
+        border: 1px solid rgba(255,255,255,0.14);
+        border-radius: 22px;
+        background: rgba(12,12,12,0.34);
+        backdrop-filter: blur(24px);
+        -webkit-backdrop-filter: blur(24px);
+        box-shadow:
+            0 25px 80px rgba(0,0,0,0.35),
+            inset 0 1px 0 rgba(255,255,255,0.06);
+        opacity: 0;
+        transform: translateY(45px) scale(0.96);
+        transition:
+            opacity 0.6s cubic-bezier(0.22,1,0.36,1),
+            transform 0.7s cubic-bezier(0.22,1,0.36,1);
+    }
+
+    .glass-card.active {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+
+    .card-1 {
+        left: clamp(25px, 8vw, 130px);
+        bottom: 15%;
+    }
+
+    .card-2 {
+        right: clamp(25px, 8vw, 130px);
+        top: 28%;
+    }
+
+    .card-3 {
+        left: clamp(25px, 8vw, 130px);
+        top: 28%;
+    }
+
+    .card-number {
+        font-size: 9px;
+        letter-spacing: 0.22em;
+        color: rgba(255,255,255,0.45);
+        margin-bottom: 20px;
+    }
+
+    .glass-card h2 {
+        font-size: clamp(30px, 4vw, 52px);
+        line-height: 0.92;
+        letter-spacing: -0.055em;
+        font-weight: 650;
+        margin-bottom: 20px;
+    }
+
+    .glass-card p {
+        font-size: 13px;
+        line-height: 1.65;
+        color: rgba(255,255,255,0.57);
+        max-width: 340px;
+    }
+
+    /* =========================================================
+       SPECS
+    ========================================================= */
+
+    .specs {
+        position: absolute;
+        left: 50%;
+        bottom: 8%;
+        transform: translateX(-50%);
+        z-index: 8;
+        width: min(750px, 90vw);
+        display: flex;
+        justify-content: center;
+        gap: clamp(20px, 6vw, 85px);
+        text-align: center;
+        opacity: 0;
+        transition: opacity 0.7s ease;
+        pointer-events: none;
+    }
+
+    .specs.active {
+        opacity: 1;
+    }
+
+    .spec {
+        white-space: nowrap;
+    }
+
+    .spec-top {
+        font-size: 8px;
+        letter-spacing: 0.25em;
+        color: rgba(255,255,255,0.36);
+        margin-bottom: 7px;
+    }
+
+    .spec-bottom {
+        font-size: 10px;
+        letter-spacing: 0.18em;
+        font-weight: 600;
+        color: rgba(255,255,255,0.75);
+    }
+
+    /* =========================================================
+       SCROLL INDICATOR
+    ========================================================= */
+
+    .scroll-indicator {
+        position: absolute;
+        z-index: 10;
+        right: clamp(22px, 4vw, 55px);
+        bottom: 8%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 12px;
+        pointer-events: none;
+    }
+
+    .scroll-text {
+        writing-mode: vertical-rl;
+        font-size: 8px;
+        letter-spacing: 0.25em;
+        text-transform: uppercase;
+        color: rgba(255,255,255,0.38);
+    }
+
+    .scroll-line {
+        width: 1px;
+        height: 65px;
+        background: linear-gradient(
+            to bottom,
+            rgba(255,255,255,0.55),
+            transparent
+        );
+    }
+
+    /* =========================================================
+       FRAME COUNTER
+    ========================================================= */
+
+    .frame-counter {
+        position: absolute;
+        z-index: 10;
+        left: clamp(22px, 4vw, 55px);
+        bottom: 6%;
+        font-size: 9px;
+        letter-spacing: 0.2em;
+        color: rgba(255,255,255,0.35);
+        pointer-events: none;
+    }
+
+    .frame-current {
+        color: rgba(255,255,255,0.8);
+    }
+
+    /* =========================================================
+       FINAL MESSAGE
+    ========================================================= */
+
+    .final-message {
+        position: absolute;
+        inset: 0;
+        z-index: 6;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        pointer-events: none;
+        opacity: 0;
+        transform: scale(0.96);
+        transition:
+            opacity 0.8s ease,
+            transform 0.8s cubic-bezier(0.22,1,0.36,1);
+    }
+
+    .final-message.active {
+        opacity: 1;
+        transform: scale(1);
+    }
+
+    .final-message-inner {
+        max-width: 800px;
+        padding: 30px;
+    }
+
+    .final-eyebrow {
+        font-size: 9px;
+        letter-spacing: 0.38em;
+        color: rgba(255,255,255,0.42);
+        text-transform: uppercase;
+        margin-bottom: 22px;
+    }
+
+    .final-message h2 {
+        font-size: clamp(48px, 9vw, 130px);
+        line-height: 0.85;
+        letter-spacing: -0.07em;
+        font-weight: 700;
+    }
+
+    /* =========================================================
+       MOBILE
+    ========================================================= */
+
+    @media (max-width: 700px) {
+        .experience {
+            height: 900vh;
+        }
+
+        .nav {
+            padding-left: 20px;
+            padding-right: 20px;
+        }
+
+        .nav-right {
+            display: none;
+        }
+
+        .hero {
+            padding-left: 24px;
+            align-items: center;
+        }
+
+        .hero h1 {
+            font-size: clamp(60px, 19vw, 110px);
+        }
+
+        .hero-subtitle {
+            max-width: 290px;
+            font-size: 12px;
+            margin-top: 24px;
+        }
+
+        .eyebrow {
+            margin-bottom: 17px;
+        }
+
+        .glass-card {
+            left: 50%;
+            right: auto;
+            width: calc(100vw - 40px);
+            padding: 23px;
+            border-radius: 18px;
+        }
+
+        .card-1,
+        .card-3 {
+            left: 50%;
+            bottom: 14%;
+            top: auto;
+            transform: translate(-50%, 45px) scale(0.96);
+        }
+
+        .card-1.active,
+        .card-3.active {
+            transform: translate(-50%, 0) scale(1);
+        }
+
+        .card-2 {
+            top: auto;
+            bottom: 14%;
+            left: 50%;
+            transform: translate(-50%, 45px) scale(0.96);
+        }
+
+        .card-2.active {
+            transform: translate(-50%, 0) scale(1);
+        }
+
+        .glass-card h2 {
+            font-size: 37px;
+        }
+
+        .glass-card p {
+            font-size: 12px;
+        }
+
+        .specs {
+            bottom: 6%;
+            width: 92vw;
+            gap: 14px;
+        }
+
+        .spec-top {
+            font-size: 6px;
+        }
+
+        .spec-bottom {
+            font-size: 7px;
+        }
+
+        .scroll-indicator {
+            display: none;
+        }
+
+        .frame-counter {
+            left: 20px;
+            bottom: 4%;
+        }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        .glass-card,
+        .hero,
+        .final-message,
+        .specs {
+            transition: none;
+        }
+    }
+</style>
+</head>
+
+<body class="loading">
+
+<!-- =========================================================
+     LOADER
+========================================================= -->
+
+<div id="loader">
+    <div class="loader-content">
+        <div class="loader-brand">Motorcycle Experience</div>
+
+        <div class="loader-title">RIDE BEYOND</div>
+
+        <div class="progress-track">
+            <div class="progress-bar" id="progressBar"></div>
+        </div>
+
+        <div class="loader-status">
+            <span id="loaderStatus">Preparing experience</span>
+            <span id="loaderPercent">0%</span>
+        </div>
+    </div>
+</div>
+
+
+<!-- =========================================================
+     SCROLL EXPERIENCE
+========================================================= -->
+
+<main class="experience" id="experience">
+
+    <section class="sticky-stage">
+
+        <canvas id="bikeCanvas"></canvas>
+
+        <div class="cinematic-vignette"></div>
+        <div class="top-gradient"></div>
+
+
+        <!-- NAVIGATION -->
+
+        <nav class="nav">
+            <div class="logo">RIDE / BEYOND</div>
+
+            <div class="nav-right">
+                <span>01 — 300</span>
+                <div class="nav-line"></div>
+                <span>Motorcycle</span>
+            </div>
+        </nav>
+
+
+        <!-- HERO -->
+
+        <div class="hero" id="hero">
+            <div class="hero-content">
+
+                <div class="eyebrow">
+                    A NEW EXPERIENCE
+                </div>
+
+                <h1>
+                    <span>RIDE</span>
+                    <span>BEYOND</span>
+                </h1>
+
+                <p class="hero-subtitle">
+                    Designed with purpose.<br>
+                    Engineered for emotion.<br>
+                    Built to make every ride unforgettable.
+                </p>
+
+            </div>
+        </div>
+
+
+        <!-- GLASS CARDS -->
+
+        <div class="card-layer">
+
+            <article class="glass-card card-1" id="card1">
+                <div class="card-number">01 — DESIGN</div>
+
+                <h2>
+                    BUILT<br>
+                    TO THRILL
+                </h2>
+
+                <p>
+                    Every line, surface and detail is designed
+                    to create a bold presence on the road.
+                </p>
+            </article>
+
+
+            <article class="glass-card card-2" id="card2">
+                <div class="card-number">02 — ENGINEERING</div>
+
+                <h2>
+                    ENGINEERED<br>
+                    TO MOVE
+                </h2>
+
+                <p>
+                    Precision engineering delivers confidence,
+                    control and a ride that feels completely connected.
+                </p>
+            </article>
+
+
+            <article class="glass-card card-3" id="card3">
+                <div class="card-number">03 — EXPERIENCE</div>
+
+                <h2>
+                    OWN<br>
+                    THE ROAD
+                </h2>
+
+                <p>
+                    This is more than transportation.
+                    It is an experience created for those
+                    who refuse ordinary.
+                </p>
+            </article>
+
+        </div>
+
+
+        <!-- SPECS -->
+
+        <div class="specs" id="specs">
+
+            <div class="spec">
+                <div class="spec-top">PRECISION</div>
+                <div class="spec-bottom">ENGINEERING</div>
+            </div>
+
+            <div class="spec">
+                <div class="spec-top">PURE</div>
+                <div class="spec-bottom">PERFORMANCE</div>
+            </div>
+
+            <div class="spec">
+                <div class="spec-top">ICONIC</div>
+                <div class="spec-bottom">DESIGN</div>
+            </div>
+
+        </div>
+
+
+        <!-- FINAL MESSAGE -->
+
+        <div class="final-message" id="finalMessage">
+            <div class="final-message-inner">
+                <div class="final-eyebrow">
+                    The road is yours
+                </div>
+
+                <h2>
+                    OWN<br>
+                    THE ROAD
+                </h2>
+            </div>
+        </div>
+
+
+        <!-- FRAME COUNTER -->
+
+        <div class="frame-counter">
+            FRAME
+            <span class="frame-current" id="frameCurrent">001</span>
+            <span>/ 300</span>
+        </div>
+
+
+        <!-- SCROLL INDICATOR -->
+
+        <div class="scroll-indicator">
+            <div class="scroll-text">Scroll to explore</div>
+            <div class="scroll-line"></div>
+        </div>
+
+    </section>
+</main>
+
+
+<script>
+/* ============================================================
+   BIKE SCROLL ANIMATION
+   300 PNG FRAMES
+============================================================ */
+
+(() => {
+    "use strict";
+
+    const TOTAL_FRAMES = 300;
+
+    const experience = document.getElementById("experience");
+    const canvas = document.getElementById("bikeCanvas");
+    const ctx = canvas.getContext("2d", {
+        alpha: false,
+        desynchronized: true
+    });
+
+    const loader = document.getElementById("loader");
+    const progressBar = document.getElementById("progressBar");
+    const loaderStatus = document.getElementById("loaderStatus");
+    const loaderPercent = document.getElementById("loaderPercent");
+
+    const frameCurrent = document.getElementById("frameCurrent");
+
+    const hero = document.getElementById("hero");
+    const card1 = document.getElementById("card1");
+    const card2 = document.getElementById("card2");
+    const card3 = document.getElementById("card3");
+    const specs = document.getElementById("specs");
+    const finalMessage = document.getElementById("finalMessage");
+
+    /* ------------------------------------------------------------
+       IMAGE STORAGE
+
+       images[0] = frame 001
+       images[1] = frame 002
+       ...
+       images[299] = frame 300
+    ------------------------------------------------------------ */
+
+    const images = new Array(TOTAL_FRAMES);
+    const loaded = new Uint8Array(TOTAL_FRAMES);
+    const loading = new Uint8Array(TOTAL_FRAMES);
+
+    let loadedCount = 0;
+
+    /*
+       This is the frame currently requested by scroll.
+       It is deliberately separate from displayedFrame because
+       displayedFrame may temporarily use the nearest loaded frame.
+    */
+    let requestedFrame = 0;
+    let displayedFrame = -1;
+
+    let targetFrame = 0;
+    let renderFrame = 0;
+
+    let scrollRAF = 0;
+    let drawRAF = 0;
+
+    let lastCanvasWidth = 0;
+    let lastCanvasHeight = 0;
+
+    let loaderFinished = false;
+
+
+    /* ============================================================
+       PATH GENERATOR
+
+       IMPORTANT:
+       Exact required filenames:
+       ezgif-frame-001-clean.png
+       ezgif-frame-002-clean.png
+       ...
+       ezgif-frame-300-clean.png
+    ============================================================ */
+
+    function framePath(index) {
+        const number = String(index + 1).padStart(3, "0");
+
+        return `images/ezgif-frame-${number}-clean.png`;
+    }
+
+
+    /* ============================================================
+       CANVAS RESOLUTION
+    ============================================================ */
+
+    function resizeCanvas() {
+        const dpr = Math.min(window.devicePixelRatio || 1, 2);
+
+        const width = Math.max(
+            1,
+            Math.floor(window.innerWidth * dpr)
+        );
+
+        const height = Math.max(
+            1,
+            Math.floor(window.innerHeight * dpr)
+        );
+
+        if (
+            canvas.width !== width ||
+            canvas.height !== height
+        ) {
+            canvas.width = width;
+            canvas.height = height;
+
+            lastCanvasWidth = width;
+            lastCanvasHeight = height;
+
+            requestDraw();
+        }
+    }
+
+
+    /* ============================================================
+       DRAW IMAGE AS "COVER"
+
+       This manually reproduces object-fit: cover for canvas
+       bitmap rendering.
+
+       Therefore:
+       - no letterboxing
+       - viewport always filled
+       - image keeps aspect ratio
+       - excess image is cropped
+    ============================================================ */
+
+    function drawImageCover(img) {
+        if (!img || !img.complete || img.naturalWidth === 0) {
+            return false;
+        }
+
+        const cw = canvas.width;
+        const ch = canvas.height;
+
+        const iw = img.naturalWidth;
+        const ih = img.naturalHeight;
+
+        const scale = Math.max(
+            cw / iw,
+            ch / ih
+        );
+
+        const drawWidth = iw * scale;
+        const drawHeight = ih * scale;
+
+        const x = (cw - drawWidth) / 2;
+        const y = (ch - drawHeight) / 2;
+
+        ctx.fillStyle = "#000";
+        ctx.fillRect(0, 0, cw, ch);
+
+        ctx.drawImage(
+            img,
+            x,
+            y,
+            drawWidth,
+            drawHeight
+        );
+
+        return true;
+    }
+
+
+    /* ============================================================
+       DRAW CURRENT FRAME
+
+       CRITICAL FIX:
+
+       This function is called:
+       1. When scrolling
+       2. When an image finishes loading
+       3. When the canvas is resized
+
+       So frame 002 cannot remain invisible simply because it
+       finished loading after the scroll event already happened.
+    ============================================================ */
+
+    function drawRequestedFrame() {
+        drawRAF = 0;
+
+        const desired = requestedFrame;
+
+        let frameToDraw = -1;
+
+        /* First priority: exact requested frame */
+        if (loaded[desired]) {
+            frameToDraw = desired;
+        } else {
+            /* Second priority: nearest loaded frame */
+            frameToDraw = findNearestLoadedFrame(desired);
+        }
+
+        if (frameToDraw < 0) {
+            return;
+        }
+
+        const img = images[frameToDraw];
+
+        if (!drawImageCover(img)) {
+            return;
+        }
+
+        displayedFrame = frameToDraw;
+
+        frameCurrent.textContent =
+            String(frameToDraw + 1).padStart(3, "0");
+    }
+
+
+    function requestDraw() {
+        if (!drawRAF) {
+            drawRAF = requestAnimationFrame(
+                drawRequestedFrame
+            );
+        }
+    }
+
+
+    /* ============================================================
+       NEAREST AVAILABLE FRAME
+    ============================================================ */
+
+    function findNearestLoadedFrame(index) {
+
+        if (loaded[index]) {
+            return index;
+        }
+
+        /*
+           Search outward from requested frame.
+           This guarantees a loaded fallback while the exact
+           requested image is downloading.
+        */
+
+        for (let distance = 1; distance < TOTAL_FRAMES; distance++) {
+
+            const before = index - distance;
+
+            if (
+                before >= 0 &&
+                loaded[before]
+            ) {
+                return before;
+            }
+
+            const after = index + distance;
+
+            if (
+                after < TOTAL_FRAMES &&
+                loaded[after]
+            ) {
+                return after;
+            }
+        }
+
+        return -1;
+    }
+
+
+    /* ============================================================
+       LOAD SINGLE FRAME
+
+       IMPORTANT FIX:
+
+       The onload handler immediately checks whether this exact
+       frame is the frame currently requested by scroll.
+
+       If yes, it forces a canvas redraw immediately.
+    ============================================================ */
+
+    function loadFrame(index, priority = false) {
+
+        if (
+            index < 0 ||
+            index >= TOTAL_FRAMES ||
+            loaded[index] ||
+            loading[index]
+        ) {
+            return;
+        }
+
+        loading[index] = 1;
+
+        const img = new Image();
+
+        /*
+           Helps browsers prioritize the current frame.
+        */
+        if (priority) {
+            img.fetchPriority = "high";
+        } else {
+            img.fetchPriority = "low";
+        }
+
+        img.decoding = "async";
+
+        img.onload = async () => {
+
+            /*
+               Keep the image object permanently stored.
+            */
+            images[index] = img;
+            loaded[index] = 1;
+            loading[index] = 0;
+            loadedCount++;
+
+            updateLoaderProgress();
+
+            /*
+               Decode before drawing where supported.
+               If decode fails/isn't available, drawing still works.
+            */
+            if (typeof img.decode === "function") {
+                try {
+                    await img.decode();
+                } catch (error) {
+                    /* Image is still usable. */
+                }
+            }
+
+            /*
+               CRITICAL:
+               If the user has already scrolled to this frame,
+               immediately redraw it.
+
+               This fixes the original "frame 001 stays visible"
+               problem.
+            */
+            if (index === requestedFrame) {
+                requestDraw();
+            }
+
+            /*
+               Frame 001 is guaranteed to appear as soon as loaded.
+            */
+            if (displayedFrame === -1) {
+                requestDraw();
+            }
+        };
+
+        img.onerror = () => {
+            loading[index] = 0;
+
+            /*
+               Retry once later.
+            */
+            setTimeout(() => {
+                if (!loaded[index]) {
+                    loadFrame(index, priority);
+                }
+            }, 1000);
+        };
+
+        img.src = framePath(index);
+    }
+
+
+    /* ============================================================
+       LOADING PROGRESS
+    ============================================================ */
+
+    function updateLoaderProgress() {
+
+        const percent = Math.round(
+            (loadedCount / TOTAL_FRAMES) * 100
+        );
+
+        progressBar.style.width = percent + "%";
+        loaderPercent.textContent = percent + "%";
+
+        if (loadedCount < 2) {
+            loaderStatus.textContent = "Preparing experience";
+        } else if (loadedCount < 20) {
+            loaderStatus.textContent = "Loading motorcycle";
+        } else if (loadedCount < TOTAL_FRAMES) {
+            loaderStatus.textContent = "Preparing frames";
+        } else {
+            loaderStatus.textContent = "Ready";
+        }
+
+        /*
+           We only need the first frame to make the experience
+           visible. Frame 002 is also started immediately.
+        */
+        if (
+            loaded[0] &&
+            loaded[1] &&
+            !loaderFinished
+        ) {
+            loaderFinished = true;
+
+            setTimeout(() => {
+                loader.classList.add("hidden");
+                document.body.classList.remove("loading");
+            }, 250);
+        }
+    }
+
+
+    /* ============================================================
+       PROGRESSIVE CHUNK LOADING
+
+       First:
+       001 + 002 immediately.
+
+       Then:
+       003-012
+       013-022
+       023-032
+       ...
+
+       Chunks are scheduled using setTimeout rather than depending
+       on requestIdleCallback, so the system works consistently
+       across browsers and mobile devices.
+    ============================================================ */
+
+    let nextChunkStart = 2;
+
+    function loadNextChunk() {
+
+        if (nextChunkStart >= TOTAL_FRAMES) {
+            return;
+        }
+
+        const start = nextChunkStart;
+        const end = Math.min(
+            start + 10,
+            TOTAL_FRAMES
+        );
+
+        for (let i = start; i < end; i++) {
+            loadFrame(i, false);
+        }
+
+        nextChunkStart = end;
+
+        /*
+           Small delay prevents us from aggressively monopolizing
+           the main thread.
+        */
+        setTimeout(loadNextChunk, 80);
+    }
+
+
+    /* ============================================================
+       PRIORITY PRELOAD AROUND CURRENT FRAME
+
+       When the user scrolls quickly, the exact requested frame
+       gets high priority, along with nearby frames.
+    ============================================================ */
+
+    function preloadAround(index) {
+
+        const radius = 7;
+
+        /*
+           Exact frame FIRST.
+        */
+        loadFrame(index, true);
+
+        /*
+           Nearby frames.
+        */
+        for (let distance = 1; distance <= radius; distance++) {
+
+            const forward = index + distance;
+
+            if (forward < TOTAL_FRAMES) {
+                loadFrame(forward, false);
+            }
+
+            const backward = index - distance;
+
+            if (backward >= 0) {
+                loadFrame(backward, false);
+            }
+        }
+    }
+
+
+    /* ============================================================
+       SCROLL → FRAME MAPPING
+
+       0% = frame 001
+       100% = frame 300
+    ============================================================ */
+
+    function calculateFrameFromScroll() {
+
+        const rect = experience.getBoundingClientRect();
+
+        /*
+           At page top:
+           rect.top = 0
+
+           At end of experience:
+           rect.top = viewportHeight - experienceHeight
+        */
+
+        const maxScroll =
+            experience.offsetHeight - window.innerHeight;
+
+        if (maxScroll <= 0) {
+            return 0;
+        }
+
+        const distanceScrolled =
+            Math.min(
+                Math.max(-rect.top, 0),
+                maxScroll
+            );
+
+        const progress =
+            distanceScrolled / maxScroll;
+
+        /*
+           Exact mapping:
+           progress 0 → 0
+           progress 1 → 299
+        */
+        return Math.min(
+            TOTAL_FRAMES - 1,
+            Math.max(
+                0,
+                Math.round(
+                    progress * (TOTAL_FRAMES - 1)
+                )
+            )
+        );
+    }
+
+
+    /* ============================================================
+       UPDATE TEXT / CARDS BASED ON SCROLL
+    ============================================================ */
+
+    function updateInterface(progress) {
+
+        /*
+           HERO
+           Visible at beginning, fades out as product animation
+           starts.
+        */
+
+        const heroFade = Math.max(
+            0,
+            Math.min(
+                1,
+                (progress - 0.035) / 0.13
+            )
+        );
+
+        hero.style.opacity =
+            String(1 - heroFade);
+
+        hero.style.transform =
+            `translateY(${-heroFade * 40}px) scale(${1 - heroFade * 0.025})`;
+
+
+        /*
+           CARD 1
+           Roughly first third.
+        */
+
+        const card1Progress =
+            smoothStep(
+                0.18,
+                0.34,
+                progress
+            );
+
+        const card1Out =
+            smoothStep(
+                0.34,
+                0.41,
+                progress
+            );
+
+        card1.classList.toggle(
+            "active",
+            card1Progress > 0.05 && card1Out < 0.8
+        );
+
+
+        /*
+           CARD 2
+        */
+
+        const card2In =
+            smoothStep(
+                0.39,
+                0.50,
+                progress
+            );
+
+        const card2Out =
+            smoothStep(
+                0.58,
+                0.66,
+                progress
+            );
+
+        card2.classList.toggle(
+            "active",
+            card2In > 0.05 && card2Out < 0.8
+        );
+
+
+        /*
+           CARD 3
+        */
+
+        const card3In =
+            smoothStep(
+                0.63,
+                0.74,
+                progress
+            );
+
+        const card3Out =
+            smoothStep(
+                0.83,
+                0.91,
+                progress
+            );
+
+        card3.classList.toggle(
+            "active",
+            card3In > 0.05 && card3Out < 0.8
+        );
+
+
+        /*
+           SPECS
+        */
+
+        specs.classList.toggle(
+            "active",
+            progress > 0.76 &&
+            progress < 0.91
+        );
+
+
+        /*
+           FINAL MESSAGE
+        */
+
+        finalMessage.classList.toggle(
+            "active",
+            progress > 0.91
+        );
+    }
+
+
+    function smoothStep(edge0, edge1, value) {
+
+        if (value <= edge0) {
+            return 0;
+        }
+
+        if (value >= edge1) {
+            return 1;
+        }
+
+        const x =
+            (value - edge0) /
+            (edge1 - edge0);
+
+        return x * x * (3 - 2 * x);
+    }
+
+
+    /* ============================================================
+       SCROLL HANDLER
+
+       Scroll events are throttled through requestAnimationFrame.
+    ============================================================ */
+
+    function onScroll() {
+
+        if (scrollRAF) {
+            return;
+        }
+
+        scrollRAF = requestAnimationFrame(() => {
+
+            scrollRAF = 0;
+
+            const progress =
+                getScrollProgress();
+
+            const newFrame =
+                Math.min(
+                    TOTAL_FRAMES - 1,
+                    Math.max(
+                        0,
+                        Math.round(
+                            progress *
+                            (TOTAL_FRAMES - 1)
+                        )
+                    )
+                );
+
+            /*
+               ALWAYS update requestedFrame.
+
+               This is important even when the image isn't loaded.
+            */
+            requestedFrame = newFrame;
+
+            targetFrame = newFrame;
+
+            /*
+               Immediately request exact frame and nearby frames.
+            */
+            preloadAround(newFrame);
+
+            /*
+               Draw exact frame if loaded.
+               Otherwise nearest loaded frame.
+            */
+            requestDraw();
+
+            updateInterface(progress);
+        });
+    }
+
+
+    function getScrollProgress() {
+
+        const rect =
+            experience.getBoundingClientRect();
+
+        const maxScroll =
+            experience.offsetHeight -
+            window.innerHeight;
+
+        if (maxScroll <= 0) {
+            return 0;
+        }
+
+        return Math.min(
+            1,
+            Math.max(
+                0,
+                -rect.top / maxScroll
+            )
+        );
+    }
+
+
+    /* ============================================================
+       INITIALIZATION
+    ============================================================ */
+
+    function init() {
+
+        resizeCanvas();
+
+        /*
+           REQUIRED:
+           Frame 001 immediately.
+        */
+        loadFrame(0, true);
+
+        /*
+           REQUIRED:
+           Frame 002 starts immediately too.
+        */
+        loadFrame(1, true);
+
+        /*
+           Start remaining frames progressively.
+        */
+        setTimeout(() => {
+            loadNextChunk();
+        }, 40);
+
+        /*
+           Initial state = frame 001.
+        */
+        requestedFrame = 0;
+        targetFrame = 0;
+
+        /*
+           Render frame 001 as soon as it is available.
+        */
+        requestDraw();
+
+        /*
+           Initial UI.
+        */
+        updateInterface(0);
+
+        /*
+           Start listening for scroll.
+        */
+        window.addEventListener(
+            "scroll",
+            onScroll,
+            {
+                passive: true
+            }
+        );
+
+        window.addEventListener(
+            "resize",
+            () => {
+                resizeCanvas();
+                onScroll();
+            },
+            {
+                passive: true
+            }
+        );
+
+        window.addEventListener(
+            "orientationchange",
+            () => {
+                setTimeout(() => {
+                    resizeCanvas();
+                    onScroll();
+                }, 100);
+            },
+            {
+                passive: true
+            }
+        );
+    }
+
+
+    /* ============================================================
+       START
+    ============================================================ */
+
+    if (document.readyState === "loading") {
+        document.addEventListener(
+            "DOMContentLoaded",
+            init,
+            {
+                once: true
+            }
+        );
+    } else {
+        init();
+    }
+
+})();
+</script>
+
+</body>
+</html>
